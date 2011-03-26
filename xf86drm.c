@@ -456,11 +456,6 @@ int drmAvailable(void)
     int           fd;
 
     if ((fd = drmOpenMinor(0, 1, DRM_NODE_RENDER)) < 0) {
-#ifdef __linux__
-	/* Try proc for backward Linux compatibility */
-	if (!access("/proc/dri/0", R_OK))
-	    return 1;
-#endif
 	return 0;
     }
     
@@ -591,38 +586,6 @@ static int drmOpenByName(const char *name)
 	    close(fd);
 	}
     }
-
-#ifdef __linux__
-    /* Backward-compatibility /proc support */
-    for (i = 0; i < 8; i++) {
-	char proc_name[64], buf[512];
-	char *driver, *pt, *devstring;
-	int  retcode;
-	
-	sprintf(proc_name, "/proc/dri/%d/name", i);
-	if ((fd = open(proc_name, 0, 0)) >= 0) {
-	    retcode = read(fd, buf, sizeof(buf)-1);
-	    close(fd);
-	    if (retcode) {
-		buf[retcode-1] = '\0';
-		for (driver = pt = buf; *pt && *pt != ' '; ++pt)
-		    ;
-		if (*pt) { /* Device is next */
-		    *pt = '\0';
-		    if (!strcmp(driver, name)) { /* Match */
-			for (devstring = ++pt; *pt && *pt != ' '; ++pt)
-			    ;
-			if (*pt) { /* Found busid */
-			    return drmOpenByBusid(++pt);
-			} else { /* No busid */
-			    return drmOpenDevice(strtol(devstring, NULL, 0),i, DRM_NODE_RENDER);
-			}
-		    }
-		}
-	    }
-	}
-    }
-#endif
 
     return -1;
 }
