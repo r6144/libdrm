@@ -154,6 +154,7 @@ static int bo_map(struct radeon_bo_int *boi, int write)
     struct drm_radeon_gem_mmap args;
     int r;
     void *ptr;
+    unsigned long addr0;
 
     if (bo_gem->map_count++ != 0) {
         return 0;
@@ -178,7 +179,9 @@ static int bo_map(struct radeon_bo_int *boi, int write)
                 boi, boi->handle, r);
         return r;
     }
-    ptr = mmap(0, args.size, PROT_READ|PROT_WRITE, MAP_SHARED, boi->bom->fd, args.addr_ptr);
+    
+    addr0 = (rand() & 0x7ffffffffUL) << 12;
+    ptr = mmap((void *) addr0, args.size, PROT_READ|PROT_WRITE, MAP_SHARED, boi->bom->fd, args.addr_ptr);
     if (ptr == MAP_FAILED)
         return -errno;
     bo_gem->priv_ptr = ptr;
