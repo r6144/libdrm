@@ -53,11 +53,11 @@ struct radeon_bo_gem {
     int                 map_count;
     atomic_t            reloc_in_cs;
     void *priv_ptr;
-    void *mmap_manager;
 };
 
 struct bo_manager_gem {
     struct radeon_bo_manager    base;
+    void *mmap_manager;
 };
 
 static int bo_wait(struct radeon_bo_int *boi);
@@ -298,6 +298,7 @@ struct radeon_bo_manager *radeon_bo_manager_gem_ctor(int fd)
     }
     bomg->base.funcs = &bo_gem_funcs;
     bomg->base.fd = fd;
+    bomg->mmap_manager = new_mmap_manager();
     return (struct radeon_bo_manager*)bomg;
 }
 
@@ -308,6 +309,7 @@ void radeon_bo_manager_gem_dtor(struct radeon_bo_manager *bom)
     if (bom == NULL) {
         return;
     }
+    free_mmap_manager(bomg->mmap_manager);
     free(bomg);
 }
 
