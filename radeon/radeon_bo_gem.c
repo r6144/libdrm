@@ -45,6 +45,7 @@
 #include "radeon_bo.h"
 #include "radeon_bo_int.h"
 #include "radeon_bo_gem.h"
+#include "mmap_manager.h"
 
 struct radeon_bo_gem {
     struct radeon_bo_int base;
@@ -52,6 +53,7 @@ struct radeon_bo_gem {
     int                 map_count;
     atomic_t            reloc_in_cs;
     void *priv_ptr;
+    void *mmap_manager;
 };
 
 struct bo_manager_gem {

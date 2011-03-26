@@ -41,7 +41,7 @@ libdrm_radeon_la_SOURCES = \
 	radeon_bo.c \
 	radeon_cs.c \
 	bof.c \
-	bof.h
+	mmap_manager.cpp
 
 libdrm_radeonincludedir = ${includedir}/libdrm
 libdrm_radeoninclude_HEADERS = \
@@ -50,7 +50,9 @@ libdrm_radeoninclude_HEADERS = \
 	radeon_bo_gem.h \
 	radeon_cs_gem.h \
 	radeon_bo_int.h \
-	radeon_cs_int.h
+	radeon_cs_int.h \
+	bof.h \
+	mmap_manager.h
 
 pkgconfigdir = @pkgconfigdir@
 pkgconfig_DATA = libdrm_radeon.pc
