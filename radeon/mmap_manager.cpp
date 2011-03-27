@@ -1,5 +1,6 @@
 #include <boost/utility.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
+#include <boost/format.hpp>
 #include <cassert>
 #include <iostream>
 #include <stdint.h>
@@ -60,17 +61,23 @@ FreeBlock::FreeBlock(size_t size): m_size(size) {
 }
 
 /* NOTE: MAP_FIXED mmap()'s usually follow munmap() at the same address.  They risk a race with
-   another thread mmap'ing the same address in the meantime, so failure is always possible. */
+   another thread mmap'ing the same address in the meantime, so failure is always possible.
+   Upon failure, m_size will be zero. */
 FreeBlock::FreeBlock(uintptr_t addr, size_t size): m_addr(addr), m_size(size) {
     assert(is_whole_pages(size));
     void *result = mmap(static_cast<void *>(addr), size, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-    assert(result == static_cast<void *>(addr)); // FIXME: might fail due to a race
+    if (result == MAP_FAILED) {
+	std::cerr << boost::format("Failed to create FreeBlock at addr=0x%x, size=%u; race?\n") % addr % size;
+	m_size = 0;
+    } else assert(result == static_cast<void *>(addr));
 }
 
 
 FreeBlock::~FreeBlock() {
-    int result = munmap((void *) m_addr, m_size);
-    assert(result == 0);
+    if (m_size != 0) {
+	int result = munmap((void *) m_addr, m_size);
+	assert(result == 0);
+    }
 }
 
 uintptr_t FreeBlock::steal(size_t ssize) {
@@ -119,7 +126,7 @@ void *MMapManager::try_map_from_blocks(size_t size, int prot, int flags, int fd,
     assert(addr != MAP_FAILED);
     void *result = mmap(addr, size, prot, flags | MAP_FIXED, fd, offset);
     if (result == MAP_FAILED)
-	std::cerr << "Fixed mmap failed in try_map_from_blocks (addr=" << addr << ", size=" << size << "); race?\n";
+	std::cerr << boost::format("Fixed mmap failed in try_map_from_blocks (addr=0x%x, size=%u); race?\n") % addr % size;
     return result;
 }
 
@@ -128,7 +135,7 @@ void *MMapManager::map(size_t len, int prot, int flags, int fd, off_t offset) {
     void *result = try_map_from_blocks(size, prot, flags, fd, offset);
     if (result == MAP_FAILED) {
 	/* The mapping is so large that the number of such mappings is unlikely to be too many.  We thus allocate directly. */
-	std::clog << "Direct allocation of size " << size << '\n';
+	std::clog << boost::format("Direct allocation of size %u\n") % size;
 	result = mmap(0, size, prot, flags, fd, offset);
     }
     return result;
@@ -138,7 +145,7 @@ void *MMapManager::map(size_t len, int prot, int flags, int fd, off_t offset) {
 void MMapManager::unmap(void *addr, size_t len) {
     size_t size = round_up_to_whole_pages(len);
     m_free_blks.insert(new FreeBlock(addr, len));
-    // FIXME: catch exceptions due to races
+    // FIXME: check for zero-sized blocks
     // FIXME: combine adjacent free blocks by calling mremap()
 }
     
