@@ -130,13 +130,14 @@ static void bo_ref(struct radeon_bo_int *boi)
 static struct radeon_bo *bo_unref(struct radeon_bo_int *boi)
 {
     struct radeon_bo_gem *bo_gem = (struct radeon_bo_gem*)boi;
+    struct bo_manager_gem *bomg = (struct bo_manager_gem *) boi->bom;
     struct drm_gem_close args;
 
     if (boi->cref) {
         return (struct radeon_bo *)boi;
     }
     if (bo_gem->priv_ptr) {
-        munmap(bo_gem->priv_ptr, boi->size);
+	mmap_manager_unmap(bomg->mmap_manager, bo_gem->priv_ptr, boi->size);
     }
 
     /* Zero out args to make valgrind happy */
@@ -153,10 +154,10 @@ static struct radeon_bo *bo_unref(struct radeon_bo_int *boi)
 static int bo_map(struct radeon_bo_int *boi, int write)
 {
     struct radeon_bo_gem *bo_gem = (struct radeon_bo_gem*)boi;
+    struct bo_manager_gem *bomg = (struct bo_manager_gem *) boi->bom;
     struct drm_radeon_gem_mmap args;
     int r;
     void *ptr;
-    unsigned long addr0;
 
     if (bo_gem->map_count++ != 0) {
         return 0;
@@ -181,9 +182,8 @@ static int bo_map(struct radeon_bo_int *boi, int write)
                 boi, boi->handle, r);
         return r;
     }
-    
-    addr0 = (rand() & 0x7ffffffffUL) << 12;
-    ptr = mmap((void *) addr0, args.size, PROT_READ|PROT_WRITE, MAP_SHARED, boi->bom->fd, args.addr_ptr);
+
+    ptr = mmap_manager_map(bomg->mmap_manager, args.size, PROT_READ|PROT_WRITE, MAP_SHARED, boi->bom->fd, args.addr_ptr);
     if (ptr == MAP_FAILED)
         return -errno;
     bo_gem->priv_ptr = ptr;
@@ -198,11 +198,12 @@ wait:
 static int bo_unmap(struct radeon_bo_int *boi)
 {
     struct radeon_bo_gem *bo_gem = (struct radeon_bo_gem*)boi;
+    struct bo_manager_gem *bomg = (struct bo_manager_gem *) boi->bom;
 
     if (--bo_gem->map_count > 0) {
         return 0;
     }
-    //munmap(bo->ptr, bo->size);
+    //mmap_manager_unmap(bomg->mmap_manager, bo->ptr, bo->size);
     boi->ptr = NULL;
     return 0;
 }
