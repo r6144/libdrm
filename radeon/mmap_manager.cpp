@@ -52,8 +52,8 @@ public:
     explicit FreeBlock(size_t size);
     FreeBlock(uintptr_t addr, size_t size);
     ~FreeBlock();
-    FreeBlockKey key() { return FreeBlockKey(m_addr, m_size); }
-    size_t size() { return m_size; }
+    FreeBlockKey key() const { return FreeBlockKey(m_addr, m_size); }
+    size_t size() const { return m_size; }
     uintptr_t steal(size_t ssize);
 
 private:
