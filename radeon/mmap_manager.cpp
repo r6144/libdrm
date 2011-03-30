@@ -1,13 +1,14 @@
-#include <boost/utility.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
-#include <boost/format.hpp>
 #include <cassert>
 #include <iostream>
 #include <memory>
 #include <stdint.h>
 #include <sys/mman.h>
 #include "mmap_manager.h"
+
+#include <boost/utility.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/assign/ptr_map_inserter.hpp>
+#include <boost/format.hpp>
 
 // FIXME: Should have used sysconf(_SC_PAGE_SIZE)
 #define PAGE_SHIFT 12

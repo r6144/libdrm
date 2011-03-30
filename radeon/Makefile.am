@@ -58,3 +58,9 @@ pkgconfigdir = @pkgconfigdir@
 pkgconfig_DATA = libdrm_radeon.pc
 
 EXTRA_DIST = libdrm_radeon.pc.in
+
+# Vague-linkage entities (e.g. non-inlined template functions) remain exported due to the
+# one-definition-rule; otherwise, there can exist multiple definitions in different shared objects
+# (while the author of the template might have only expected one), which will cause problems even
+# when the definitions are compatible.
+mmap_manager.lo: AM_CXXFLAGS += -fvisibility=hidden
